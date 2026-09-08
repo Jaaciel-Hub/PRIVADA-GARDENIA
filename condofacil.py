@@ -22,7 +22,7 @@ if "ok" not in st.session_state:
     u = st.text_input("Usuario")
     p = st.text_input("Clave", type="password")
     if st.button("Entrar"):
-        if USUARIOS.get(u) == p:
+        if u in USUARIOS and USUARIOS[u]["password"] == p:
             st.session_state.ok = True
             st.rerun()
         else: st.error("Datos incorrectos")
