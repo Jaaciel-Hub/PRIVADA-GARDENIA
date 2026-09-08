@@ -1,5 +1,5 @@
 import streamlit as st
-import json, os
+import json, os, base64
 from datetime import datetime
 import pandas as pd
 from fpdf import FPDF
@@ -12,13 +12,17 @@ def load():
     return json.load(open(DB_FILE)) if os.path.exists(DB_FILE) else {"cuotas":[],"avisos":[]}
 def save(db): json.dump(db, open(DB_FILE,"w"))
 
+def fmt_anio(a):
+    try: return str(int(float(a)))
+    except: return str(a)
+
 def crear_pdf(depto,mes,anio,monto,concepto):
     pdf=FPDF(); pdf.add_page()
     pdf.set_font("Arial","B",16); pdf.cell(0,10,"Privada Gardenia - Recibo",ln=True,align="C")
     pdf.set_font("Arial","",12); pdf.ln(10)
     pdf.cell(0,10,f"Departamento: {depto}",ln=True)
     pdf.cell(0,10,f"Concepto: {concepto}",ln=True)
-    pdf.cell(0,10,f"Periodo: {mes} {anio}",ln=True)
+    pdf.cell(0,10,f"Periodo: {mes} {fmt_anio(anio)}",ln=True)
     pdf.cell(0,10,f"Monto: ${monto}",ln=True)
     pdf.cell(0,10,f"Fecha: {datetime.now().strftime('%Y-%m-%d')}",ln=True)
     pdf.ln(20); pdf.cell(0,10,"_________________________ Firma Tesorero",align="C")
@@ -60,19 +64,12 @@ with tab1:
         else: st.success("Sin adeudos")
         for i,row in df.iterrows():
             c1,c2,c3=st.columns([3,1,1])
-            c1.write(f"{row['departamento']} | {row['mes']} {row['anio']} | ${row['monto']} {'✅' if row['pagado'] else '❌'}")
+            c1.write(f"{row['departamento']} | {row['mes']} {fmt_anio(row['anio'])} | ${row['monto']} {'✅' if row['pagado'] else '❌'}")
             if es_admin:
                 if c2.button("✓/✗",key=f"t{i}"):
                     db["cuotas"][i]["pagado"]=not db["cuotas"][i]["pagado"]; save(db); st.rerun()
                 pdf_bytes=crear_pdf(row['departamento'],row['mes'],row['anio'],row['monto'],row['concepto'])
                 c3.download_button("PDF",pdf_bytes,f"recibo_{row['departamento']}_{row['mes']}.pdf","application/pdf",key=f"p{i}")
     else: st.info("No hay cuotas")
-with tab2:
-    st.subheader("Avisos")
-    if es_admin:
-        with st.form("na"):
-            t=st.text_input("Título"); m=st.text_area("Mensaje")
-            if st.form_submit_button("Publicar"):
-                db["avisos"].append({"titulo":t,"mensaje":m,"fecha":datetime.now().strftime("%Y-%m-%d")}); save(db); st.rerun()
-    for a in reversed(db.get("avisos",[])):
-        st.info(f"**{a['titulo']}** ({a['fecha']})\n\n{a['mensaje']}")
+
+with
